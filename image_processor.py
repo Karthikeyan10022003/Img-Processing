@@ -1,3 +1,4 @@
+import time
 import requests
 import cv2
 from ultralytics import YOLO
@@ -29,10 +30,66 @@ def image_detection(model, image_path):
         print("Image detection completed successfully.")
         cv2.destroyAllWindows()
 
+import cv2
+import os
+
 def video_detection(model, video_path):
     try:
+    
         if not os.path.exists(video_path):
-            path=r'output\output_video.mp4'
+            path = r'output\output_video.mp4'
+            if not os.path.exists(path):
+                print("Error: Video file does not exist.")
+                return
+            video_path = path
+
+        cap = cv2.VideoCapture(video_path)
+
+        if not cap.isOpened():
+            print("Error: Could not open video.")
+            return
+
+        
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        
+        os.makedirs("output", exist_ok=True)
+        output_path = r"output\output_video_detected.mp4"
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                print("End of video stream or cannot read the video.")
+                break
+
+            # Run detection
+            results = model(frame, conf=0.1, imgsz=1280)
+            annotated_frame = results[0].plot()
+
+          
+            out.write(annotated_frame)
+
+            
+            cv2.imshow("Snack Detection", annotated_frame)
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+    except KeyboardInterrupt:
+        print("Error: Keyboard interrupt detected. Exiting.")
+    finally:
+        cap.release()
+        out.release()
+        cv2.destroyAllWindows()
+        print(f"Video detection completed successfully. Saved at: {output_path}")
+
+    try:
+        if not os.path.exists(video_path):
+            path=r"D:\img_processing_trial\img_processing_trial\output\webcam_output_0.mp4"
             if not os.path.exists(path):
                 print("Error: Video file does not exist.")
                 return
@@ -64,43 +121,55 @@ def video_detection(model, video_path):
         cv2.destroyAllWindows()
         print("Video detection completed successfully.")
 #Open web cam continously and generate 20 sec once a video
-def webcam_detection():
-    count=0
+def webcam_detection(headless=True):
+    count = 0
+
+    # Ensure output directory exists
+    os.makedirs("output", exist_ok=True)
+
+    # Try opening camera
+    cap = cv2.VideoCapture("/dev/video0")  # Adjust index if needed
+    if not cap.isOpened():
+        print("Error: Could not open webcam.")
+        return
+
     try:
         while True:
-            cap=cv2.VideoCapture(0)
-            if not cap.isOpened():
-                print("Error: Could not open webcam.")
-                return
-            frame_width = int(cap.get(3))
-            frame_height = int(cap.get(4))
-            out = cv2.VideoWriter(f'output/webcam_output_{count}.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30, (frame_width, frame_height))
-            for i in range(600):
+            frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+            out_file = f'output/webcam_output_{count}.mp4'
+            out = cv2.VideoWriter(out_file,
+                                  cv2.VideoWriter_fourcc(*'mp4v'),
+                                  30, (frame_width, frame_height))
+
+            print(f"Recording chunk {count}...")
+
+            for i in range(600):  # ~20 seconds at 30 fps
                 ret, frame = cap.read()
                 if not ret:
                     print("Error: Could not read frame from webcam.")
                     break
 
-                
                 out.write(frame)
 
-                cv2.imshow("Snack Detection", frame)
+                # Sleep a tiny bit if needed to reduce CPU
+                time.sleep(0.01)
 
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
             out.release()
-            count+=1
-    except(KeyboardInterrupt):
-        print("Error: Keyboard interrupt detected. Exiting.")
+            print(f"Saved {out_file}")
+            count += 1
+
+    except KeyboardInterrupt:
+        print("Keyboard interrupt detected. Exiting...")
     finally:
         cap.release()
-        cv2.destroyAllWindows()
         print("Webcam detection completed successfully.")
 
 
 def main():
-    model = YOLO(r"D:\img_processing_trial\img_processing_trial\kitkat_lays_kurkure.pt")
-    # model=YOLO(r"C:\Users\riota\Downloads\best.pt")
+    # model = YOLO(r"D:\img_processing_trial\img_processing_trial\kitkat_lays_kurkure.pt")
+    model=YOLO(r"D:\img_processing_trial\img_processing_trial\best.pt")
     image_path=r"D:\img_processing_trial\img_processing_trial\welcome to America.jpg"
     img_link = requests.get("https://images.unsplash.com/photo-1632687380457-05a1271e873b?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fHNuYWNrc3xlbnwwfHwwfHx8MA%3D%3D").content
     file_name='test_input.jpg'
@@ -108,7 +177,8 @@ def main():
         f.write(img_link)
     
     # image_detection(model, file_name)
-    video_detection(model,r'D:\img_processing_trial\img_processing_trial\istockphoto-2179808994-640_adpp_is.mp4')
+    video_detection(model,r"C:\Users\riota\Downloads\Movies\CAM0_2023-05-06_12-12-36.mp4")
+    # webcam_detection()
 
 
 
