@@ -121,14 +121,14 @@ def video_detection(model, video_path):
         cv2.destroyAllWindows()
         print("Video detection completed successfully.")
 #Open web cam continously and generate 20 sec once a video
-def webcam_detection(headless=True):
+def webcam_detection():
     count = 0
 
     # Ensure output directory exists
     os.makedirs("output", exist_ok=True)
 
     # Try opening camera
-    cap = cv2.VideoCapture("/dev/video0")  # Adjust index if needed
+    cap = cv2.VideoCapture(0)  # Adjust index if needed
     if not cap.isOpened():
         print("Error: Could not open webcam.")
         return
@@ -168,17 +168,16 @@ def webcam_detection(headless=True):
 
 
 def main():
-    # model = YOLO(r"D:\img_processing_trial\img_processing_trial\kitkat_lays_kurkure.pt")
+    
     model=YOLO(r"D:\img_processing_trial\img_processing_trial\best.pt")
     image_path=r"D:\img_processing_trial\img_processing_trial\welcome to America.jpg"
     img_link = requests.get("https://images.unsplash.com/photo-1632687380457-05a1271e873b?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fHNuYWNrc3xlbnwwfHwwfHx8MA%3D%3D").content
     file_name='test_input.jpg'
     with open(file_name, 'wb') as f:
-        f.write(img_link)
+        f.write(img_link) 
     
-    # image_detection(model, file_name)
     video_detection(model,r"C:\Users\riota\Downloads\Movies\CAM0_2023-05-06_12-12-36.mp4")
-    # webcam_detection()
+    
 
 
 
